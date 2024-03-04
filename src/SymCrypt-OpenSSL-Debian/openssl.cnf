@@ -50,8 +50,17 @@ tsa_policy3 = 1.2.3.4.5.7
 # Refer to the OpenSSL security policy for more information.
 # .include fipsmodule.cnf
 
-[openssl_init]
+[ openssl_init ]
 providers = provider_sect
+engines = engine_section
+
+[ engine_section ]
+symcrypt = symcrypt_section
+
+[ symcrypt_section ]
+engine_id = symcrypt
+dynamic_path = /usr/lib/x86_64-linux-gnu/libsymcryptengine.so
+default_algorithms = ALL
 
 # List of providers to load
 [provider_sect]

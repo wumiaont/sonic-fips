@@ -27,16 +27,18 @@ endif
 CMAKE_ARCH_LOWER = $(shell echo $(CMAKE_ARCH) | tr '[:upper:]' '[:lower:]')
 
 INSTALL_PATH = $(BUILD_ROOT_DIR)/usr/lib/$(LIB_INSTALL_NAME)
+ENGINES_PATH = $(INSTALL_PATH)/engines-3
 PROVIDERS_PATH = $(INSTALL_PATH)/ossl-modules
 DEBIAN_DIR = $(BUILD_ROOT_DIR)/DEBIAN
 
 ROOT_PATH = $(shell realpath $(shell pwd)/../..)
 DEST ?= $(ROOT_PATH)/target
 LIBSYMCRYPT = $(DEST)/libsymcrypt.so
+LIBSYMCRYPTENGINE = $(DEST)/libsymcryptengine.so
 LIBSYMCRYPTPROVIDER = $(DEST)/symcryptprovider.so
 TARGET = $(DEST)/$(SYMCRYPT_PACKAGE)
 
-DEPENDS := $(LIBSYMCRYPT) $(LIBSYMCRYPTPROVIDER)
+DEPENDS := $(LIBSYMCRYPT) $(LIBSYMCRYPTENGINE) $(LIBSYMCRYPTPROVIDER)
 
 all: $(TARGET)
 
@@ -64,6 +66,7 @@ $(LIBSYMCRYPTPROVIDER): $(LIBSYMCRYPT)
 	cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake-toolchain/LinuxUserMode-$(CMAKE_ARCH).cmake -DSYMCRYPT_ROOT_DIR=$(ROOT_PATH)/src/SymCrypt -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE)
 	cmake --build .
 	rm ../libsymcrypt.so*
+	cp SymCryptEngine/dynamic/symcryptengine.so $(LIBSYMCRYPTENGINE)
 	cp -a SymCryptProvider/symcryptprovider.so $(LIBSYMCRYPTPROVIDER)
 
 $(LIBSYMCRYPTPROVIDER)-bk:
@@ -75,10 +78,15 @@ $(LIBSYMCRYPTPROVIDER)-bk:
 
 $(TARGET): $(DEPENDS)
 	mkdir -p $(INSTALL_PATH)
+	mkdir -p $(ENGINES_PATH)
 	mkdir -p $(PROVIDERS_PATH)
 	mkdir -p $(DEBIAN_DIR)
 	mkdir -p $(BUILD_ROOT_DIR)/etc/ssl
 	cp -a $(DEST)/libsymcrypt.so* $(INSTALL_PATH)/
+	cp $(LIBSYMCRYPTENGINE) $(INSTALL_PATH)
+	ln -sf $(shell basename $(LIBSYMCRYPTENGINE)) $(INSTALL_PATH)/symcryptengine.so
+	ln -sf ../$(shell basename $(LIBSYMCRYPTENGINE)) $(ENGINES_PATH)/symcryptengine.so
+	chmod o+r $(INSTALL_PATH)/*
 	cp -a $(LIBSYMCRYPTPROVIDER) $(PROVIDERS_PATH)/
 	cp -rf debian/* $(DEBIAN_DIR)/
 	chmod a+r -R $(INSTALL_PATH)/
